@@ -1,0 +1,2 @@
+F:/Commissions/meditrack-project/meditrack/android/app/.cxx/RelWithDebInfo/d2g6x1t6/x86_64/CMakeFiles/edit_cache.dir
+F:/Commissions/meditrack-project/meditrack/android/app/.cxx/RelWithDebInfo/d2g6x1t6/x86_64/CMakeFiles/rebuild_cache.dir

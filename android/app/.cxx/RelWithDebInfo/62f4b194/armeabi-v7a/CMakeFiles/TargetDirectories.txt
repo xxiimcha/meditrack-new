@@ -1,0 +1,2 @@
+D:/PERSONAL PROJECTS/meditrack/android/app/.cxx/RelWithDebInfo/62f4b194/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/PERSONAL PROJECTS/meditrack/android/app/.cxx/RelWithDebInfo/62f4b194/armeabi-v7a/CMakeFiles/rebuild_cache.dir
