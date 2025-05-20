@@ -74,11 +74,12 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Account Settings", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                    const Text("Medications", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 20),
                     _buildOptionTile(Icons.assignment, "Current History", context, selected: true),
                     _buildOptionTile(Icons.assignment_outlined, "Past History", context),
                     _buildOptionTile(Icons.favorite_border, "Current Medications", context),
+                    _buildOptionTile(Icons.check_circle_outline, "Record Intake", context, onTap: () {Navigator.pushNamed(context, '/record_intake'); }),
                     const Divider(),
                     _buildOptionTile(Icons.folder_open, "Help", context, onTap: () => HelpDialogBox.show(context)),
                     _buildOptionTile(Icons.info_outline, "About", context, onTap: () => AboutDialogBox.show(context)),
