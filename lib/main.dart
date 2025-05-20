@@ -12,6 +12,7 @@ import 'screens/patient_form_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/medication_list_screen.dart';
 import 'screens/record_intake_screen.dart';
+import 'screens/current_medication.dart';
 
 // Notification packages
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -63,6 +64,7 @@ class MeditrackApp extends StatelessWidget {
         '/list': (context) => const MedicationScheduleListScreen(),
         '/patient_form': (context) => const PatientFormScreen(),
         '/record_intake': (context) => RecordIntakeScreen(),
+        '/current_medications': (context) => CurrentMedicationsScreen(),
         '/profile': (context) => const ProfileScreen(),
       },
     );
