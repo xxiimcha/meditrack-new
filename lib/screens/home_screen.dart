@@ -16,7 +16,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = true;
   String userFullName = "Loading...";
   Map<String, dynamic>? patientData;
-  String adherenceResult = ''; // <-- Store model result
+  String adherenceResult = '';
+  String? riskLevel;
+  double? riskProbability;
 
   @override
   void initState() {
@@ -76,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() => patientData = snapshot.docs.first.data());
         await fetchTodayMedications();
         await getPredictions();
+        await checkRiskAlert(); // Now safely called after patientData loaded
       }
     } catch (e) {
       print("❌ Error: $e");
@@ -99,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> getPredictions() async {
     if (patientData == null) return;
 
-    final url = Uri.parse('http://192.168.0.96:5000/predict'); // replace with your IP
+    final url = Uri.parse('http://192.168.0.96:5000/predict');
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode([
       {
@@ -117,11 +120,43 @@ class _HomeScreenState extends State<HomeScreen> {
         final data = jsonDecode(response.body);
         setState(() {
           predictions = data;
-          adherenceResult = data.isNotEmpty ? data[0]['Adherence'] : '';
+          adherenceResult = data.isNotEmpty && data[0]['Adherence'] != null
+              ? data[0]['Adherence']
+              : 'Unknown';
         });
       }
     } catch (e) {
       print('Prediction error: $e');
+    }
+  }
+
+  Future<void> checkRiskAlert() async {
+    if (patientData == null) return;
+
+    final url = Uri.parse('http://192.168.0.96:5000/risk_alert');
+    final headers = {'Content-Type': 'application/json'};
+    final body = jsonEncode([
+      {
+        "age": patientData!['age'],
+        "gender": patientData!['gender'],
+        "condition": patientData!['condition'],
+        "medication": patientData!['medication']
+      }
+    ]);
+
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final result = data[0];
+
+        setState(() {
+          riskLevel = result['Early_Warning_Alert'] == true ? "High Risk" : "Low Risk";
+          riskProbability = result['NonAdherence_Probability'];
+        });
+      }
+    } catch (e) {
+      print('Alert error: $e');
     }
   }
 
@@ -244,6 +279,36 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (riskLevel != null && riskProbability != null)
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: riskLevel == "High Risk" ? Colors.red.shade100 : Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Early Warning:",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: riskLevel == "High Risk" ? Colors.red : Colors.green,
+                            ),
+                          ),
+                          Text(
+                            "$riskLevel (${(riskProbability! * 100).toStringAsFixed(1)}%)",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: riskLevel == "High Risk" ? Colors.red : Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const Text(
                     'Pills for today',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
