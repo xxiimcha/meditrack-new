@@ -74,7 +74,7 @@ void _showScheduleDialog(BuildContext context) async {
                     itemCount: filtered.length,
                     separatorBuilder: (context, index) => Divider(color: Colors.grey.shade300),
                     itemBuilder: (context, index) {
-                      final item = filtered[index];
+                      final item = filtered[index].data() as Map<String, dynamic>;
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -89,7 +89,7 @@ void _showScheduleDialog(BuildContext context) async {
                             Text("Interval: ${item['interval']}"),
                           if (item['instruction'] != null)
                             Text("Instruction: ${item['instruction']}"),
-                          if (item.data().toString().contains('time') && item['time'] != null)
+                          if (item.containsKey('time') && item['time'] != null)
                             Text("Time: ${item['time']}"),
                         ],
                       );
