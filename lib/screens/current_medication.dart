@@ -45,30 +45,58 @@ class _CurrentMedicationsScreenState extends State<CurrentMedicationsScreen> {
 
   Widget buildMedicationCard(Map<String, dynamic> data) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(data['medication_name'] ?? '',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 6),
-          if (data['instruction'] != null)
-            Text("Instruction: ${data['instruction']}"),
-          if (data['frequency'] != null)
-            Text("Frequency: ${data['frequency']}"),
-          if (data['interval'] != null)
-            Text("Interval: ${data['interval']}"),
-          if (data['start_date'] != null && data['until_date'] != null)
-            Text(
-              "Schedule: ${DateFormat.yMMMd().format((data['start_date'] as Timestamp).toDate())} to ${DateFormat.yMMMd().format((data['until_date'] as Timestamp).toDate())}",
-              style: const TextStyle(fontSize: 13, color: Colors.grey),
+          CircleAvatar(
+            backgroundColor: Colors.green.shade100,
+            child: Icon(Icons.medication, color: Colors.green.shade800),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data['medication_name'] ?? '',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                if (data['instruction'] != null)
+                  Text.rich(TextSpan(
+                    text: "Instruction: ",
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    children: [TextSpan(text: data['instruction'], style: const TextStyle(fontWeight: FontWeight.normal))],
+                  )),
+                if (data['frequency'] != null)
+                  Text.rich(TextSpan(
+                    text: "Frequency: ",
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    children: [TextSpan(text: data['frequency'], style: const TextStyle(fontWeight: FontWeight.normal))],
+                  )),
+                if (data['interval'] != null)
+                  Text.rich(TextSpan(
+                    text: "Interval: ",
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    children: [TextSpan(text: data['interval'], style: const TextStyle(fontWeight: FontWeight.normal))],
+                  )),
+                if (data['start_date'] != null && data['until_date'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      "Schedule: ${DateFormat.yMMMd().format((data['start_date'] as Timestamp).toDate())} → ${DateFormat.yMMMd().format((data['until_date'] as Timestamp).toDate())}",
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -77,10 +105,11 @@ class _CurrentMedicationsScreenState extends State<CurrentMedicationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF7FB),
+      backgroundColor: const Color(0xFFF4F7FA),
       appBar: AppBar(
         title: const Text("Current Medications"),
         backgroundColor: Colors.green,
+        elevation: 0,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())

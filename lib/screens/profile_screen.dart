@@ -76,7 +76,7 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     const Text("Medications", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 20),
-                    _buildOptionTile(Icons.assignment, "Current History", context, selected: true),
+                    _buildOptionTile(Icons.assignment, "Current History", context),
                     _buildOptionTile(Icons.assignment_outlined, "Past History", context),
                     _buildOptionTile(Icons.favorite_border, "Current Medications", context, onTap: () { Navigator.pushNamed(context, '/current_medications');}),
                     _buildOptionTile(Icons.check_circle_outline, "Record Intake", context, onTap: () {Navigator.pushNamed(context, '/record_intake'); }),
