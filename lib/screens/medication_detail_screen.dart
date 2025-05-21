@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/medications/pill_detail_row.dart';
+import '../widgets/medications/add_capsule_dialog.dart';
+import '../widgets/medications/capsule_addition_history.dart';
 
 class MedicationDetailScreen extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -20,7 +23,13 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
     super.initState();
     quantityLeft = widget.data['quantity_left'] ?? 0;
     totalQuantity = widget.data['total_quantity'] ?? 0;
-    docId = widget.data['id'] ?? ''; // You must pass 'id' in the data map from the list
+    docId = widget.data['id'] ?? '';
+
+    if (docId.isEmpty) {
+      debugPrint("⚠️ ERROR: Document ID is missing.");
+    } else {
+      debugPrint("📄 Loaded document ID: $docId");
+    }
   }
 
   Future<void> _consumeCapsule() async {
@@ -32,9 +41,7 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
     }
 
     try {
-      setState(() {
-        quantityLeft--;
-      });
+      setState(() => quantityLeft--);
 
       await FirebaseFirestore.instance
           .collection('medication_schedules')
@@ -45,9 +52,46 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
         const SnackBar(content: Text('Capsule marked as taken.')),
       );
     } catch (e) {
-      setState(() => quantityLeft++); // revert on failure
+      setState(() => quantityLeft++);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
+  Future<void> _addCapsules(int count) async {
+    if (count <= 0 || docId.isEmpty) return;
+
+    final now = Timestamp.now();
+
+    try {
+      setState(() {
+        quantityLeft += count;
+        totalQuantity += count;
+      });
+
+      final docRef = FirebaseFirestore.instance.collection('medication_schedules').doc(docId);
+
+      await docRef.update({
+        'quantity_left': quantityLeft,
+        'total_quantity': totalQuantity,
+      });
+
+      await docRef.collection('capsule_additions').add({
+        'added_count': count,
+        'added_at': now,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$count capsules added and logged.')),
+      );
+    } catch (e) {
+      setState(() {
+        quantityLeft -= count;
+        totalQuantity -= count;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding capsules: $e')),
       );
     }
   }
@@ -70,7 +114,7 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
         elevation: 0,
         leading: BackButton(color: Colors.black),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,9 +126,9 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _pillDetailRow("Pill Name", name),
-            _pillDetailRow("Pill Dosage", dosage),
-            _pillDetailRow("Next Dose", nextDose),
+            pillDetailRow("Pill Name", name),
+            pillDetailRow("Pill Dosage", dosage),
+            pillDetailRow("Next Dose", nextDose),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(20),
@@ -101,37 +145,29 @@ class _MedicationDetailScreenState extends State<MedicationDetailScreen> {
                   const SizedBox(height: 12),
                   _infoSection("Quantity",
                       "Total $totalQuantity capsules | $quantityLeft capsules left"),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
+                        backgroundColor: Colors.green,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      onPressed: _consumeCapsule,
-                      child: const Text("Submit", style: TextStyle(color: Colors.white)),
+                      onPressed: () => showAddCapsulesDialog(context, _addCapsules),
+                      child: const Text("Add Capsules", style: TextStyle(color: Colors.white)),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
+            const SizedBox(height: 30),
+            const Text("Addition History",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 10),
+            capsuleAdditionHistory(docId),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _pillDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.black87)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        ],
       ),
     );
   }

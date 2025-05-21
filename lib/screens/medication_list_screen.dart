@@ -76,7 +76,12 @@ class MedicationScheduleListScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => MedicationDetailScreen(data: data),
+                                builder: (_) => MedicationDetailScreen(
+                                  data: {
+                                    ...data,       // Spread original document fields
+                                    'id': doc.id,  // ✅ Add the Firestore document ID
+                                  },
+                                ),
                               ),
                             );
                           },
