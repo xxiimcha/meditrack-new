@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> getPredictions() async {
     if (patientData == null) return;
 
-    final url = Uri.parse('http://192.168.0.96:5000/predict');
+    final url = Uri.parse('https://meditrack-ai.onrender.com/predict');
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode([
       {
@@ -133,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> checkRiskAlert() async {
     if (patientData == null) return;
 
-    final url = Uri.parse('http://192.168.0.96:5000/risk_alert');
+    final url = Uri.parse('https://meditrack-ai.onrender.com/risk_alert');
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode([
       {
