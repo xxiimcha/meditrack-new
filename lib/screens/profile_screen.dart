@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/custom_bottom_navbar.dart';
 import '../widgets/dialog.dart'; // Import dialogs
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  Future<void> _logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Clear all saved session data
+
+    // Navigate to login screen and clear navigation stack
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,13 +85,16 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     const Text("Medications", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 20),
-                    _buildOptionTile(Icons.assignment, "Current History", context),
-                    _buildOptionTile(Icons.assignment_outlined, "Past History", context),
-                    _buildOptionTile(Icons.favorite_border, "Current Medications", context, onTap: () { Navigator.pushNamed(context, '/current_medications');}),
-                    _buildOptionTile(Icons.check_circle_outline, "Record Intake", context, onTap: () {Navigator.pushNamed(context, '/record_intake'); }),
+                    _buildOptionTile(Icons.favorite_border, "Current Medications", context, onTap: () {
+                      Navigator.pushNamed(context, '/current_medications');
+                    }),
+                    _buildOptionTile(Icons.check_circle_outline, "Record Intake", context, onTap: () {
+                      Navigator.pushNamed(context, '/record_intake');
+                    }),
                     const Divider(),
                     _buildOptionTile(Icons.folder_open, "Help", context, onTap: () => HelpDialogBox.show(context)),
                     _buildOptionTile(Icons.info_outline, "About", context, onTap: () => AboutDialogBox.show(context)),
+                    _buildOptionTile(Icons.logout, "Logout", context, onTap: () => _logout(context)),
                   ],
                 ),
               ),
