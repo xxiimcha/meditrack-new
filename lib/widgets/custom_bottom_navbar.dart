@@ -11,10 +11,12 @@ class CustomBottomNavBar extends StatelessWidget {
     final TextEditingController nameController = TextEditingController();
     final TextEditingController frequencyController = TextEditingController();
     final TextEditingController instructionController = TextEditingController();
+    final TextEditingController intervalPerHourController = TextEditingController();
 
     String intervalOption = 'Everyday';
     DateTime? startDate;
     DateTime? untilDate;
+    TimeOfDay? firstIntakeTime;
 
     showDialog(
       context: context,
@@ -67,6 +69,21 @@ class CustomBottomNavBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: intervalPerHourController,
+                      decoration: InputDecoration(
+                        labelText: 'Interval Per Hour (e.g. every 6 hours)',
+                        prefixIcon: const Icon(Icons.timelapse),
+                        filled: true,
+                        fillColor: const Color(0xFFF5F5F5),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
@@ -143,6 +160,22 @@ class CustomBottomNavBar extends StatelessWidget {
                         }
                       },
                     ),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      leading: const Icon(Icons.access_time),
+                      title: Text(firstIntakeTime == null
+                          ? 'Select First Intake Time'
+                          : firstIntakeTime!.format(context)),
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
+                        if (picked != null) {
+                          setState(() => firstIntakeTime = picked);
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -186,19 +219,23 @@ class CustomBottomNavBar extends StatelessWidget {
                       'user_id': user.uid,
                       'medication_name': nameController.text.trim(),
                       'frequency': frequencyController.text.trim(),
+                      'interval_per_hour': int.tryParse(intervalPerHourController.text.trim()),
                       'interval': intervalOption,
                       'instruction': instructionController.text.trim(),
                       'start_date': startDate != null ? Timestamp.fromDate(startDate!) : null,
                       'until_date': untilDate != null ? Timestamp.fromDate(untilDate!) : null,
+                      'first_intake_time': firstIntakeTime != null
+                          ? '${firstIntakeTime!.hour.toString().padLeft(2, '0')}:${firstIntakeTime!.minute.toString().padLeft(2, '0')}'
+                          : null,
                       'created_at': Timestamp.now(),
                     });
 
-                    // 🔔 Schedule reminder for testing (10 seconds from now)
+                    // 🔔 Test reminder
                     DateTime reminderTime = DateTime.now().add(const Duration(seconds: 10));
                     await NotificationService.scheduleReminder(
                       id: reminderTime.hashCode,
                       title: 'Time to take your medication',
-                      body: '${nameController.text.trim()}',
+                      body: nameController.text.trim(),
                       time: reminderTime,
                     );
 
