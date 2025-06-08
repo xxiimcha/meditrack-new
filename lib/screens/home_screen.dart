@@ -11,14 +11,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<dynamic> predictions = [];
+  static const String apiBaseUrl = 'https://meditrack-ai.onrender.com'; // Base API URL
+
   List<QueryDocumentSnapshot> todayMedications = [];
+  Map<String, String> intakeStatuses = {};
   bool isLoading = true;
   String userFullName = "Loading...";
   Map<String, dynamic>? patientData;
-  String adherenceResult = '';
-  String? riskLevel;
-  double? riskProbability;
 
   @override
   void initState() {
@@ -76,9 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       } else {
         setState(() => patientData = snapshot.docs.first.data());
-        await fetchTodayMedications();
-        await getPredictions();
-        await checkRiskAlert(); // Now safely called after patientData loaded
+        await fetchTodayMedicationsWithIntakeStatus();
       }
     } catch (e) {
       print("❌ Error: $e");
@@ -87,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => isLoading = false);
   }
 
-  Future<void> fetchTodayMedications() async {
+  Future<void> fetchTodayMedicationsWithIntakeStatus() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -96,71 +93,34 @@ class _HomeScreenState extends State<HomeScreen> {
         .where('user_id', isEqualTo: user.uid)
         .get();
 
-    setState(() => todayMedications = snapshot.docs);
-  }
+    List<QueryDocumentSnapshot> meds = snapshot.docs;
+    Map<String, String> statusMap = {};
 
-  Future<void> getPredictions() async {
-    if (patientData == null) return;
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
 
-    final url = Uri.parse('https://meditrack-ai.onrender.com/predict');
-    final headers = {'Content-Type': 'application/json'};
-    final body = jsonEncode([
-      {
-        "age": patientData!['age'],
-        "gender": patientData!['gender'],
-        "condition": patientData!['condition'],
-        "medication": patientData!['medication'],
-        "Medication_Name": patientData!['medication']
-      }
-    ]);
+    for (var doc in meds) {
+      final scheduleId = doc.id;
 
-    try {
-      final response = await http.post(url, headers: headers, body: body);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          predictions = data;
-          adherenceResult = data.isNotEmpty && data[0]['Adherence'] != null
-              ? data[0]['Adherence']
-              : 'Unknown';
-        });
-      }
-    } catch (e) {
-      print('Prediction error: $e');
+      final intakeSnapshot = await FirebaseFirestore.instance
+          .collection('medication_schedules')
+          .doc(scheduleId)
+          .collection('medication_intakes')
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(todayStart))
+          .where('timestamp', isLessThan: Timestamp.fromDate(todayEnd))
+          .get();
+
+      statusMap[scheduleId] = intakeSnapshot.docs.isNotEmpty ? 'Taken' : 'Missed';
     }
+
+    setState(() {
+      todayMedications = meds;
+      intakeStatuses = statusMap;
+    });
   }
 
-  Future<void> checkRiskAlert() async {
-    if (patientData == null) return;
-
-    final url = Uri.parse('https://meditrack-ai.onrender.com/risk_alert');
-    final headers = {'Content-Type': 'application/json'};
-    final body = jsonEncode([
-      {
-        "age": patientData!['age'],
-        "gender": patientData!['gender'],
-        "condition": patientData!['condition'],
-        "medication": patientData!['medication']
-      }
-    ]);
-
-    try {
-      final response = await http.post(url, headers: headers, body: body);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final result = data[0];
-
-        setState(() {
-          riskLevel = result['Early_Warning_Alert'] == true ? "High Risk" : "Low Risk";
-          riskProbability = result['NonAdherence_Probability'];
-        });
-      }
-    } catch (e) {
-      print('Alert error: $e');
-    }
-  }
-
-  Widget _buildPillCard(Map<String, dynamic> data, bool isPrimary, {String? adherence}) {
+  Widget _buildPillCard(Map<String, dynamic> data, bool isPrimary, {String? status}) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
@@ -213,12 +173,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          if (isPrimary && adherence != null) ...[
+          if (status != null) ...[
             const SizedBox(height: 12),
             Text(
-              'Predicted Adherence: $adherence',
-              style: const TextStyle(
-                color: Colors.white,
+              'Intake Status: $status',
+              style: TextStyle(
+                color: status == "Missed" ? Colors.red : Colors.green,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
@@ -279,36 +239,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (riskLevel != null && riskProbability != null)
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: riskLevel == "High Risk" ? Colors.red.shade100 : Colors.green.shade100,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "Early Warning:",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: riskLevel == "High Risk" ? Colors.red : Colors.green,
-                            ),
-                          ),
-                          Text(
-                            "$riskLevel (${(riskProbability! * 100).toStringAsFixed(1)}%)",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: riskLevel == "High Risk" ? Colors.red : Colors.green,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   const Text(
                     'Pills for today',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -318,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildPillCard(
                       todayMedications[0].data() as Map<String, dynamic>,
                       true,
-                      adherence: adherenceResult,
+                      status: intakeStatuses[todayMedications[0].id],
                     ),
                     const SizedBox(height: 20),
                     const Text(
@@ -330,6 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _buildPillCard(
                         todayMedications[i].data() as Map<String, dynamic>,
                         false,
+                        status: intakeStatuses[todayMedications[i].id],
                       ),
                   ] else
                     const Text("No medication schedules for today."),
