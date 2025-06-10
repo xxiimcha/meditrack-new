@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class PatientFormScreen extends StatefulWidget {
   const PatientFormScreen({Key? key}) : super(key: key);
@@ -12,30 +13,33 @@ class PatientFormScreen extends StatefulWidget {
 class _PatientFormScreenState extends State<PatientFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
-  final _medicationController = TextEditingController();
-  final _conditionController = TextEditingController();
+  DateTime? _birthDate;
 
   String _gender = 'Male';
   bool _isLoading = false;
 
   Future<void> _submitPatient() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || _birthDate == null) return;
 
     setState(() => _isLoading = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-
       if (user == null) throw Exception('User not logged in');
+
+      final age = DateTime.now().year - _birthDate!.year -
+          (DateTime.now().month < _birthDate!.month ||
+                  (DateTime.now().month == _birthDate!.month &&
+                      DateTime.now().day < _birthDate!.day)
+              ? 1
+              : 0);
 
       await FirebaseFirestore.instance.collection('patients').add({
         'user_id': user.uid,
         'name': _nameController.text.trim(),
-        'age': int.parse(_ageController.text),
+        'birthdate': Timestamp.fromDate(_birthDate!),
+        'age': age,
         'gender': _gender,
-        'medication': _medicationController.text.trim(),
-        'condition': _conditionController.text.trim(),
         'created_at': Timestamp.now(),
       });
 
@@ -62,9 +66,9 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
         content: const SingleChildScrollView(
           child: Text(
             'This form allows a user to register a patient under their Firebase account. '
-            'Each patient record includes personal and medical details, such as name, age, gender, '
-            'current medications, and medical condition. All submissions are securely stored in Firestore, '
-            'linked to the authenticated user\'s ID. This ensures that each user sees only their own patients.',
+            'Each patient record includes personal details, such as name, gender, and birthdate. '
+            'The system automatically calculates the patient\'s age based on the selected birthdate. '
+            'All submissions are securely stored in Firestore and linked to the authenticated user\'s ID.',
           ),
         ),
         actions: [
@@ -77,8 +81,23 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
     );
   }
 
+  Future<void> _selectBirthDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2010),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() => _birthDate = picked);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final birthDateText =
+        _birthDate != null ? DateFormat.yMMMd().format(_birthDate!) : 'Select Birthdate';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register Patient'),
@@ -113,20 +132,26 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                 validator: (value) => value!.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _ageController,
-                decoration: const InputDecoration(
-                  labelText: 'Age',
-                  border: OutlineInputBorder(),
-                  filled: true,
-                  fillColor: Color(0xFFF1F3F4),
+              InkWell(
+                onTap: _selectBirthDate,
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Birthdate',
+                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Color(0xFFF1F3F4),
+                  ),
+                  child: Text(birthDateText),
                 ),
-                keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value == null || int.tryParse(value) == null
-                        ? 'Enter a valid age'
-                        : null,
               ),
+              if (_birthDate == null)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Birthdate is required',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _gender,
@@ -141,33 +166,6 @@ class _PatientFormScreenState extends State<PatientFormScreen> {
                   DropdownMenuItem(value: 'Female', child: Text('Female')),
                 ],
                 onChanged: (val) => setState(() => _gender = val!),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                "Medical Details",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _medicationController,
-                decoration: const InputDecoration(
-                  labelText: 'Medication',
-                  border: OutlineInputBorder(),
-                  filled: true,
-                  fillColor: Color(0xFFF1F3F4),
-                ),
-                validator: (value) => value!.isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _conditionController,
-                decoration: const InputDecoration(
-                  labelText: 'Condition',
-                  border: OutlineInputBorder(),
-                  filled: true,
-                  fillColor: Color(0xFFF1F3F4),
-                ),
-                validator: (value) => value!.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 32),
               SizedBox(

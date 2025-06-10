@@ -121,8 +121,15 @@ class _SignInScreenState extends State<SignInScreen> {
                             labelText: 'Password',
                             border: OutlineInputBorder(),
                           ),
-                          validator: (value) =>
-                              value == null || value.isEmpty ? 'Password is required' : null,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) return 'Password is required';
+                            if (value.length < 8) return 'Must be at least 8 characters';
+                            if (!RegExp(r'[A-Z]').hasMatch(value)) return 'Must include an uppercase letter';
+                            if (!RegExp(r'[a-z]').hasMatch(value)) return 'Must include a lowercase letter';
+                            if (!RegExp(r'[0-9]').hasMatch(value)) return 'Must include a number';
+                            if (!RegExp(r'[!@#\$&*~]').hasMatch(value)) return 'Must include a special character';
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 28),
                         SizedBox(

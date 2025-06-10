@@ -11,7 +11,8 @@ class ProfileScreen extends StatelessWidget {
     await prefs.clear(); // Clear all saved session data
 
     // Navigate to login screen and clear navigation stack
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    Navigator.pushNamedAndRemoveUntil(context, '/signin', (route) => false);
+
   }
 
   @override
@@ -31,46 +32,6 @@ class ProfileScreen extends StatelessWidget {
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.green,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.green.shade200,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text("Name", style: TextStyle(fontSize: 16)),
-                          Divider(),
-                          Text("Type of Disability", style: TextStyle(fontSize: 16)),
-                          Divider(),
-                          Text("Signature", style: TextStyle(fontSize: 16)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        children: const [
-                          CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Colors.white,
-                            child: Icon(Icons.person, size: 50, color: Colors.green),
-                          ),
-                          SizedBox(height: 8),
-                          Text("ID NO.", style: TextStyle(fontSize: 16)),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
               ),
               const SizedBox(height: 30),
